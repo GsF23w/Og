@@ -1,0 +1,159 @@
+--// LocalScript → StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- UI
+local sg = Instance.new("ScreenGui", playerGui)
+sg.Name = "OGBlockUI"
+sg.ResetOnSpawn = false
+
+local main = Instance.new("Frame", sg)
+main.Size = UDim2.new(0, 240, 0, 160)
+main.Position = UDim2.new(0.5, -120, 0.5, -80)
+main.BackgroundColor3 = Color3.fromRGB(15,15,20)
+main.BorderSizePixel = 0
+
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,14)
+
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(255,221,85)
+
+-- Title
+local titleBar = Instance.new("Frame", main)
+titleBar.Size = UDim2.new(1,0,0,36)
+titleBar.BackgroundTransparency = 1
+
+local title = Instance.new("TextLabel", titleBar)
+title.Size = UDim2.new(1,0,1,0)
+title.BackgroundTransparency = 1
+title.Text = "OG LUCKY BLOCK"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.fromRGB(255,221,85)
+
+-- Button
+local btn = Instance.new("TextButton", main)
+btn.Size = UDim2.new(0.85,0,0,55)
+btn.Position = UDim2.new(0.075,0,0.5,0)
+btn.BackgroundColor3 = Color3.fromRGB(255,190,40)
+btn.Text = "INJECT"
+btn.Font = Enum.Font.GothamBlack
+btn.TextSize = 26
+btn.TextColor3 = Color3.fromRGB(20,20,20)
+
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+
+-- DRAG (FIXED FOR MOBILE)
+local dragging, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- LOADING (SMALL CARD + SMOOTH)
+local function showLoading()
+	local load = Instance.new("Frame", sg)
+	load.Size = UDim2.new(0,260,0,110)
+	load.Position = UDim2.new(0.5,-130,0.5,-55)
+	load.BackgroundColor3 = Color3.fromRGB(10,10,12)
+	load.BackgroundTransparency = 1
+
+	Instance.new("UICorner", load).CornerRadius = UDim.new(0,12)
+
+	local txt = Instance.new("TextLabel", load)
+	txt.Size = UDim2.new(1,0,0,40)
+	txt.Position = UDim2.new(0,0,0.2,0)
+	txt.BackgroundTransparency = 1
+	txt.Text = "Loading..."
+	txt.Font = Enum.Font.GothamBold
+	txt.TextSize = 22
+	txt.TextColor3 = Color3.fromRGB(255,221,85)
+
+	local barBG = Instance.new("Frame", load)
+	barBG.Size = UDim2.new(0.8,0,0,8)
+	barBG.Position = UDim2.new(0.1,0,0.65,0)
+	barBG.BackgroundColor3 = Color3.fromRGB(40,40,45)
+
+	Instance.new("UICorner", barBG)
+
+	local bar = Instance.new("Frame", barBG)
+	bar.Size = UDim2.new(0,0,1,0)
+	bar.BackgroundColor3 = Color3.fromRGB(255,221,85)
+
+	Instance.new("UICorner", bar)
+
+	-- Fade in
+	TweenService:Create(load, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+
+	-- Progress (20s)
+	TweenService:Create(bar, TweenInfo.new(20, Enum.EasingStyle.Linear), {
+		Size = UDim2.new(1,0,1,0)
+	}):Play()
+
+	return load
+end
+
+-- LOGIC
+local function notify(txt)
+	StarterGui:SetCore("SendNotification", {
+		Title = "OG Block",
+		Text = txt,
+		Duration = 5
+	})
+end
+
+local function injectNow()
+	notify("Injected successfully!")
+end
+
+-- BUTTON
+btn.Activated:Connect(function()
+	btn.Text = "LOADING..."
+
+	local loadUI = showLoading()
+
+	task.delay(20, function()
+		injectNow()
+
+		-- Fade out
+		TweenService:Create(loadUI, TweenInfo.new(0.3), {
+			BackgroundTransparency = 1
+		}):Play()
+
+		task.delay(0.3, function()
+			loadUI:Destroy()
+		end)
+
+		btn.Text = "INJECT"
+	end)
+end)
+
+notify("UI Loaded • Drag from top • Press Inject")
