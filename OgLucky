@@ -1,0 +1,172 @@
+--// LocalScript → StarterPlayerScripts
+
+local Players          = game:GetService("Players")
+local StarterGui       = game:GetService("StarterGui")
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player    = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ────────────────────────────────────────────────
+--  Create ScreenGui + UI
+-- ────────────────────────────────────────────────
+local sg = Instance.new("ScreenGui")
+sg.Name = "OGBlockUI"
+sg.ResetOnSpawn = false
+sg.Parent = playerGui
+
+local main = Instance.new("Frame")
+main.Size       = UDim2.new(0, 220, 0, 150)
+main.Position   = UDim2.new(0.5, -110, 0.5, -75)
+main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Parent = sg
+
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+
+local stroke = Instance.new("UIStroke")
+stroke.Color      = Color3.fromRGB(255, 221, 85)
+stroke.Thickness  = 2
+stroke.Transparency = 0.45
+stroke.Parent = main
+
+-- Title bar (draggable)
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 34)
+titleBar.BackgroundTransparency = 1
+titleBar.Parent = main
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 1, 0)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.Text = "OG BLOCK"
+title.TextColor3 = Color3.fromRGB(255, 221, 85)
+title.TextSize = 20
+title.Parent = titleBar
+
+-- Button
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0.88, 0, 0, 54)
+btn.Position = UDim2.new(0.06, 0, 0, 62)
+btn.BackgroundColor3 = Color3.fromRGB(255, 190, 40)
+btn.Text = "OG BLOCK"
+btn.TextSize = 26
+btn.Font = Enum.Font.GothamBlack
+btn.Parent = main
+
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 9)
+
+-- ────────────────────────────────────────────────
+--  Draggable
+-- ────────────────────────────────────────────────
+local dragging, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- ────────────────────────────────────────────────
+--  Loading Screen
+-- ────────────────────────────────────────────────
+local function showLoading()
+    local loadGui = Instance.new("ScreenGui")
+    loadGui.Name = "LoadingUI"
+    loadGui.Parent = playerGui
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1,0,1,0)
+    bg.BackgroundColor3 = Color3.fromRGB(10,10,12)
+    bg.Parent = loadGui
+
+    local text = Instance.new("TextLabel")
+    text.Size = UDim2.new(1,0,0,50)
+    text.Position = UDim2.new(0,0,0.45,0)
+    text.BackgroundTransparency = 1
+    text.Text = "Loading..."
+    text.Font = Enum.Font.GothamBold
+    text.TextSize = 28
+    text.TextColor3 = Color3.fromRGB(255,221,85)
+    text.Parent = bg
+
+    local barBG = Instance.new("Frame")
+    barBG.Size = UDim2.new(0.4,0,0,8)
+    barBG.Position = UDim2.new(0.3,0,0.55,0)
+    barBG.BackgroundColor3 = Color3.fromRGB(40,40,45)
+    barBG.Parent = bg
+    Instance.new("UICorner", barBG)
+
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(0,0,1,0)
+    bar.BackgroundColor3 = Color3.fromRGB(255,221,85)
+    bar.Parent = barBG
+    Instance.new("UICorner", bar)
+
+    TweenService:Create(bar, TweenInfo.new(100, Enum.EasingStyle.Linear), {
+        Size = UDim2.new(1,0,1,0)
+    }):Play()
+
+    return loadGui
+end
+
+-- ────────────────────────────────────────────────
+--  Logic
+-- ────────────────────────────────────────────────
+local alreadyInjected = false
+
+local function notify(text)
+    StarterGui:SetCore("SendNotification", {
+        Title = "OG Block",
+        Text = text,
+        Duration = 5,
+    })
+end
+
+local function injectNow()
+    if alreadyInjected then
+        notify("Already injected!")
+        return
+    end
+
+    alreadyInjected = true
+    notify("Injected successfully!")
+end
+
+-- ────────────────────────────────────────────────
+--  Button Action (WITH LOADING)
+-- ────────────────────────────────────────────────
+btn.Activated:Connect(function()
+    local oldText = btn.Text
+    btn.Text = "Loading..."
+
+    local loadingUI = showLoading()
+
+    task.delay(100, function()
+        injectNow()
+
+        if loadingUI then
+            loadingUI:Destroy()
+        end
+
+        btn.Text = oldText
+    end)
+end)
+
+-- Fixed error line
+notify("UI Loaded • Drag from top • Press button to activate OG blocks")
